@@ -19,6 +19,8 @@
 
 package org.apache.cxf.common.i18n;
 
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.text.MessageFormat;
 import java.util.Locale;
 import java.util.MissingResourceException;
@@ -79,11 +81,11 @@ public final class BundleUtils {
         try {
             return ResourceBundle.getBundle(getBundleName(cls),
                                         Locale.getDefault(),
-                                        cls.getClassLoader());
+                                        getClassLoader(cls));
         } catch (MissingResourceException ex) {
             return ResourceBundle.getBundle(getBundleName(cls),
                                             Locale.getDefault(),
-                                            Thread.currentThread().getContextClassLoader());
+                                            getContextClassLoader());
             
         }
     }
@@ -100,11 +102,11 @@ public final class BundleUtils {
         try {
             return ResourceBundle.getBundle(getBundleName(cls, name),
                                             Locale.getDefault(),
-                                            cls.getClassLoader());
+                                            getClassLoader(cls));
         } catch (MissingResourceException ex) {
             return ResourceBundle.getBundle(getBundleName(cls, name),
                                             Locale.getDefault(),
-                                            Thread.currentThread().getContextClassLoader());
+                                            getContextClassLoader());
             
         }
     }
@@ -120,4 +122,21 @@ public final class BundleUtils {
     public static String getFormattedString(ResourceBundle b, String key, Object ... params) {
         return MessageFormat.format(b.getString(key), params);
     }
+
+    private static ClassLoader getClassLoader(final Class<?> clazz) {
+        return AccessController.doPrivileged(new PrivilegedAction<ClassLoader>() {
+            public ClassLoader run() {
+                return clazz.getClassLoader();
+            }
+        });
+    }
+
+    private static ClassLoader getContextClassLoader() {
+        return AccessController.doPrivileged(new PrivilegedAction<ClassLoader>() {
+            public ClassLoader run() {
+                return Thread.currentThread().getContextClassLoader();
+            }
+        });
+    }
+
 }

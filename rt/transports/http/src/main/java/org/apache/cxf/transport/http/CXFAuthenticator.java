@@ -50,7 +50,7 @@ public class CXFAuthenticator extends Authenticator {
         if (instance == null) {
             instance = new CXFAuthenticator();
             Authenticator wrapped = null;
-            for (final Field f : Authenticator.class.getDeclaredFields()) {
+            for (final Field f : ReflectionUtil.getDeclaredFields(Authenticator.class)) {
                 if (f.getType().equals(Authenticator.class)) {
                     ReflectionUtil.setAccessible(f);
                     try {

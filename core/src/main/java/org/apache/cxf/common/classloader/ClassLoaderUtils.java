@@ -250,7 +250,7 @@ public final class ClassLoaderUtils {
     public static Class<?> loadClass(String className, Class<?> callingClass)
         throws ClassNotFoundException {
         try {
-            ClassLoader cl = Thread.currentThread().getContextClassLoader();
+            ClassLoader cl = getContextClassLoader();
 
             if (cl != null) {
                 return cl.loadClass(className);
@@ -263,7 +263,7 @@ public final class ClassLoaderUtils {
     public static <T> Class<? extends T> loadClass(String className, Class<?> callingClass, Class<T> type)
         throws ClassNotFoundException {
         try {
-            ClassLoader cl = Thread.currentThread().getContextClassLoader();
+            ClassLoader cl = getContextClassLoader();
 
             if (cl != null) {
                 return cl.loadClass(className).asSubclass(type);
@@ -279,15 +279,33 @@ public final class ClassLoaderUtils {
             return Class.forName(className);
         } catch (ClassNotFoundException ex) {
             try {
-                if (ClassLoaderUtils.class.getClassLoader() != null) {
-                    return ClassLoaderUtils.class.getClassLoader().loadClass(className);
+                final ClassLoader loader = getClassLoader(ClassLoaderUtils.class);
+                if (loader != null) {
+                    return loader.loadClass(className);
                 }
             } catch (ClassNotFoundException exc) {
-                if (callingClass != null && callingClass.getClassLoader() != null) {
-                    return callingClass.getClassLoader().loadClass(className);
+                if (callingClass != null && getClassLoader(callingClass) != null) {
+                    return getClassLoader(callingClass).loadClass(className);
                 }
             }
             throw ex;
         }
     }
+
+    private static ClassLoader getContextClassLoader() {
+        return AccessController.doPrivileged(new PrivilegedAction<ClassLoader>() {
+            public ClassLoader run() {
+                return Thread.currentThread().getContextClassLoader();
+            }
+        });
+    }
+
+    private static ClassLoader getClassLoader(final Class<?> clazz) {
+        return AccessController.doPrivileged(new PrivilegedAction<ClassLoader>() {
+            public ClassLoader run() {
+                return clazz.getClassLoader();
+            }
+        });
+    }
+
 }

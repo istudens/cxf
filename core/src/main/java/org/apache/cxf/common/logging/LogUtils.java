@@ -229,8 +229,8 @@ public final class LogUtils {
     protected static Logger createLogger(Class<?> cls, 
                                          String name, 
                                          String loggerName) {
-        ClassLoader orig = Thread.currentThread().getContextClassLoader();
-        ClassLoader n = cls.getClassLoader();
+        ClassLoader orig = getContextClassLoader();
+        ClassLoader n = getClassLoader(cls);
         if (n != null) {
             setContextClassLoader(n);
         }
@@ -305,7 +305,23 @@ public final class LogUtils {
             }
         }
     }
-    
+
+    private static ClassLoader getClassLoader(final Class<?> clazz) {
+        return AccessController.doPrivileged(new PrivilegedAction<ClassLoader>() {
+            public ClassLoader run() {
+                return clazz.getClassLoader();
+            }
+        });
+    }
+
+    private static ClassLoader getContextClassLoader() {
+        return AccessController.doPrivileged(new PrivilegedAction<ClassLoader>() {
+            public ClassLoader run() {
+                return Thread.currentThread().getContextClassLoader();
+            }
+        });
+    }
+
     private static void setContextClassLoader(final ClassLoader classLoader) {
         AccessController.doPrivileged(new PrivilegedAction<Object>() {
             public Object run() {

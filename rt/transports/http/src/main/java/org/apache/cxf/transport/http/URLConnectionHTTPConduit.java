@@ -30,6 +30,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.security.AccessController;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
 import java.util.logging.Level;
 
 import org.apache.cxf.Bus;
@@ -40,6 +43,7 @@ import org.apache.cxf.helpers.IOUtils;
 import org.apache.cxf.io.CacheAndWriteOutputStream;
 import org.apache.cxf.message.Message;
 import org.apache.cxf.message.MessageUtils;
+import org.apache.cxf.service.ServiceImpl;
 import org.apache.cxf.service.model.EndpointInfo;
 import org.apache.cxf.transport.https.HttpsURLConnectionFactory;
 import org.apache.cxf.transport.https.HttpsURLConnectionInfo;
@@ -233,8 +237,22 @@ public class URLConnectionHTTPConduit extends HTTPConduit {
             OutputStream cout = null;
             try {
                 try {
-                    cout = connection.getOutputStream();
-                } catch (ProtocolException pe) {
+//                    cout = connection.getOutputStream();
+                    if (System.getSecurityManager() != null) {
+                        try {ServiceImpl
+                            cout = AccessController.doPrivileged(new PrivilegedExceptionAction<OutputStream>() {
+                                @Override
+                                public OutputStream run() throws IOException {
+                                    return connection.getOutputStream();
+                                }
+                            });
+                        } catch (PrivilegedActionException e) {
+                            throw (IOException) e.getException();
+                        }
+                    } else {
+                        cout = connection.getOutputStream();
+                    }
+               } catch (ProtocolException pe) {
                     Boolean b =  (Boolean)outMessage.get(HTTPURL_CONNECTION_METHOD_REFLECTION);
                     cout = connectAndGetOutputStream(b); 
                 }

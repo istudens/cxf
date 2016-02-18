@@ -30,8 +30,11 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLDecoder;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.PropertyPermission;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -132,10 +135,14 @@ public class URIResolver {
             // It is possible that spaces have been encoded.  We should decode them first.
             uriStr = uriStr.replaceAll("%20", " ");
 
-            File uriFile = new File(uriStr);
-            
-            
-            uriFile = new File(uriFile.getAbsolutePath());
+            final File uriFileTemp = new File(uriStr);
+
+            File uriFile = new File(AccessController.doPrivileged(new PrivilegedAction<String>() {
+                @Override
+                public String run() {
+                    return uriFileTemp.getAbsolutePath();
+                }
+            }));//, AccessController.getContext(), new PropertyPermission("user.dir", "read")));
             if (!SecurityActions.fileExists(uriFile, CXFPermissions.RESOLVE_URI)) {
                 try {
                     URI urif = new URI(URLDecoder.decode(orig, "ASCII"));
